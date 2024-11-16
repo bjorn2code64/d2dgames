@@ -163,27 +163,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="DDEServer.h" />
     <ClInclude Include="DialogFile.h" />
     <ClInclude Include="DlgAbout.h" />
     <ClInclude Include="Doc.h" />
     <ClInclude Include="GDIPrinter.h" />
-    <ClInclude Include="MasterCommsThread.h" />
-    <ClInclude Include="MasterCommsThreadSer.h" />
-    <ClInclude Include="SocketServerCommsThread.h" />
-    <ClInclude Include="Service.h" />
-    <ClInclude Include="WebServer.h" />
     <ClInclude Include="WindowSaverExt.h" />
     <ClInclude Include="WLSyslink.h" />
-    <ClInclude Include="Xml.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DDEServer.cpp" />
-    <ClCompile Include="MasterCommsThread.cpp" />
-    <ClCompile Include="MasterCommsThreadSer.cpp" />
-    <ClCompile Include="Service.cpp" />
     <ClCompile Include="WLSyslink.cpp" />
-    <ClCompile Include="Xml.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\wrap32lib-file\wrap32lib-file.vcxproj">
