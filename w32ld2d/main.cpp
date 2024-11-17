@@ -24,7 +24,7 @@ public:
 		srand((unsigned int)time(NULL));	// Stop random numbers being the same every time
 		w32seed();
 
-		AddExt(&m_windowSaver);
+		AddExt(&m_windowSaver);	// Routes Windows messages to the window position saver so it can do it's thing
 	}
 
 	~MainWindow() {
@@ -34,22 +34,22 @@ public:
 	DWORD CreateAndShow(int nCmdShow) {
 		RETURN_IF_ERROR(CreateOverlapped(APPNAME));
 
-		m_world.Init();
-		D2DWindow::Init(m_world.GetScreenSize());
+		m_world.Init();	// Intialise the world
+		D2DWindow::Init(m_world.GetScreenSize());	// Intialise our d2d engine
 
 		Show(nCmdShow);
 		return ERROR_SUCCESS;
 	}
 
 protected:
+	// Direct2D callbacks from the engine. Pass them to our world.
 	void D2DOnCreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory) override  {
 		pRenderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White), &m_pBrush);
 		m_world.CreateResources(pDWriteFactory, pRenderTarget, pIWICFactory, &m_rsFAR);
 	}
 
 	bool D2DUpdate() {
-		ULONGLONG tick = GetTickCount64();
-		return m_world.Update(tick, m_ptMouse);
+		return m_world.Update(GetTickCount64(), m_ptMouse);
 	}
 
 	void D2DPreRender(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory) override {
@@ -59,6 +59,7 @@ protected:
 	void D2DRender(ID2D1HwndRenderTarget* pRenderTarget) override {
 		D2DClearScreen(D2D1::ColorF::Black);
 
+		// Draw the fixed aspect rectangle
 		RectF rectBounds;
 		D2DGetFARRect(&rectBounds);
 		pRenderTarget->DrawRectangle(rectBounds, m_pBrush);
@@ -73,7 +74,7 @@ protected:
 	}
 
 	LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override {
-		if (uMsg == WM_MOUSEMOVE) {
+		if (uMsg == WM_MOUSEMOVE) {	// Track the mouse
 			w32Point mouse = lParam;
 			m_rsFAR.ReverseScaleAndOffset(&mouse);
 			m_ptMouse = mouse;
@@ -83,13 +84,15 @@ protected:
 	}
 
 protected:
-//	BouncyWorld m_world;
-	BreakoutWorld m_world;
-//	InvaderWorld m_world;
+// Instance just one of the following worlds
 
-	ID2D1SolidColorBrush* m_pBrush;	// Outline brush - white
+//	BouncyWorld m_world;
+//	BreakoutWorld m_world;
+	InvaderWorld m_world;
+
+	ID2D1SolidColorBrush* m_pBrush;	// Fixed aspect outline brush - white
 	Point2F m_ptMouse;				// Track the mouse position
-	WindowSaverExt m_windowSaver;	// Save the window position between runs
+	WindowSaverExt m_windowSaver;	// Save the screen position between runs
 };
 
 ////////////////////////////////////////////////////////////////////////////////
