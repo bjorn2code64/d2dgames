@@ -5,9 +5,9 @@
 
 #include <WindowSaverExt.h>
 
-//#include "BouncyWorld.h"
+#include "BouncyWorld.h"
 #include "InvaderWorld.h"
-//#include "BreakoutWorld.h"
+#include "BreakoutWorld.h"
 
 #define APPNAME L"w32ld2d"
 
@@ -84,8 +84,8 @@ protected:
 
 protected:
 //	BouncyWorld m_world;
-//	BreakoutWorld m_world;
-	InvaderWorld m_world;
+	BreakoutWorld m_world;
+//	InvaderWorld m_world;
 
 	ID2D1SolidColorBrush* m_pBrush;	// Outline brush - white
 	Point2F m_ptMouse;				// Track the mouse position

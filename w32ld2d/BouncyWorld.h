@@ -72,7 +72,7 @@ public:
 		auto it = m_shapes.begin();
 		while (it != m_shapes.end()) {
 			// Move the shape
-			switch ((*it)->Move(&rectBounds)) {
+			switch ((*it)->WillHit(&rectBounds)) {
 			case Position::moveResult::hitboundsleft:
 				(*it)->BounceX();
 				break;
@@ -86,6 +86,7 @@ public:
 				(*it)->BounceY();
 				break;
 			}
+			(*it)->Move();
 
 			// Is the mouse touching it?
 			if ((*it)->HitTest(mouse)) {

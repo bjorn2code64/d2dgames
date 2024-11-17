@@ -24,20 +24,20 @@ public:
 	{}
 	~BreakoutWorld() {}
 
-	bool CreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, const D2DRectScaler* pRS) {
+	bool CreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory, const D2DRectScaler* pRS) {
 		for (FLOAT x = 0; x < m_screenWidth; x += m_brickWidth) {
 			for (int y = 0; y < 5; y++) {
 				MovingRectangle* pBrick = new MovingRectangle(Point2F(x, y * m_brickHeight),
 					m_brickWidth - 1.0f, m_brickHeight - 1.0f, 0, 0,
 					RGB(w32rand(255), w32rand(255), w32rand(255))
 				);
-				pBrick->D2DOnCreateResources(pDWriteFactory, pRenderTarget, pRS);
+				pBrick->D2DOnCreateResources(pDWriteFactory, pRenderTarget, pIWICFactory, pRS);
 				m_bricks.push_back(pBrick);
 			}
 		}
 
-		m_player.D2DOnCreateResources(pDWriteFactory, pRenderTarget, pRS);
-		m_ball.D2DOnCreateResources(pDWriteFactory, pRenderTarget, pRS);
+		m_player.D2DOnCreateResources(pDWriteFactory, pRenderTarget, pIWICFactory, pRS);
+		m_ball.D2DOnCreateResources(pDWriteFactory, pRenderTarget, pIWICFactory, pRS);
 		return true;
 	}
 
@@ -60,7 +60,7 @@ public:
 		rectBounds.left = rectBounds.top = 0;
 		rectBounds.right = m_screenWidth;
 		rectBounds.bottom = m_screenHeight;
-		switch (m_ball.Move(&rectBounds)) {
+		switch (m_ball.WillHit(&rectBounds)) {
 		case Position::moveResult::hitboundsright:
 		case Position::moveResult::hitboundsleft:
 			m_ball.BounceX();
@@ -73,8 +73,9 @@ public:
 
 		if (m_ball.HitTestShape(m_player)) {
 			m_ball.BounceY();
-			m_ball.Move(&rectBounds);
 		}
+
+		m_ball.Move();
 
 		auto it = m_bricks.begin();
 		while (it != m_bricks.end()) {
