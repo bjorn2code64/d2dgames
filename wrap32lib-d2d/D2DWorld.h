@@ -83,7 +83,7 @@ public:
 		D2DDiscardResources();
 	}
 
-	virtual void D2DOnCreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, const D2DRectScaler* pRS) {
+	virtual void D2DOnCreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* m_pIWICFactory, const D2DRectScaler* pRS) {
 		UINT32 rgb =
 			(m_rgb & 0x000000ff) << 16 |
 			(m_rgb & 0x0000ff00) |
@@ -249,6 +249,74 @@ protected:
 	FLOAT m_fHeight;
 };
 
+class MovingBitmap : public Shape
+{
+public:
+	MovingBitmap(d2dBitmap* bitmap, const Point2F& pos, float width, float height, float speed, int dir, UINT32 rgb, LPARAM userdata = 0) :
+		m_bitmap(bitmap), Shape(pos, speed, dir, rgb, userdata), m_fWidth(width), m_fHeight(height) {}
+
+	void SetBitmap(d2dBitmap* bitmap) {
+		m_bitmap = bitmap;
+	}
+
+	bool HitTest(Point2F pos) override {
+		return false;
+	}
+
+	moveResult WillHit(D2D1_RECT_U* pBounds = NULL) {
+		Point2F currPos = GetPos();
+		__super::MovePos(currPos);
+
+		if (pBounds) {
+			// Check if it hit an edge
+			if (currPos.x < pBounds->left) {
+				return moveResult::hitboundsleft;
+			}
+			if (currPos.x > pBounds->right - m_fWidth) {
+				return moveResult::hitboundsright;
+			}
+			if (currPos.y < pBounds->top) {
+				return moveResult::hitboundstop;
+			}
+			if (currPos.y > pBounds->bottom - m_fHeight) {
+				return moveResult::hitboundsbottom;
+			}
+		}
+
+		return moveResult::ok;
+	}
+
+	void Draw(ID2D1HwndRenderTarget* pRenderTarget, const D2DRectScaler* pRS = NULL) override {
+		Point2F pos = GetPos();
+		FLOAT fWidth = m_fWidth;
+		FLOAT fHeight = m_fHeight;
+		if (pRS) {
+			pRS->Scale(&pos);
+			pRS->ScaleNoOffset(&fWidth);
+			pRS->ScaleNoOffset(&fHeight);
+		}
+
+		D2D1_RECT_F r;
+		r.left = pos.x;
+		r.right = pos.x + fWidth;
+		r.top = pos.y;
+		r.bottom = pos.y + fHeight;
+		m_bitmap->Render(pRenderTarget, r);
+	}
+
+	void GetBoundingBox(RectF* p) const {
+		p->left = GetPos().x;
+		p->right = GetPos().x + m_fWidth;
+		p->top = GetPos().y;
+		p->bottom = GetPos().y + m_fHeight;
+	}
+
+protected:
+	FLOAT m_fWidth;
+	FLOAT m_fHeight;
+	d2dBitmap* m_bitmap;
+};
+
 class MovingText : public Shape {
 public:
 	MovingText(LPCWSTR wsz, const Point2F& pos, float width, float height, float speed, int dir, UINT32 rgb, DWRITE_TEXT_ALIGNMENT ta, LPARAM userdata = 0) :
@@ -260,7 +328,7 @@ public:
 	{
 	}
 
-	void D2DOnCreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, const D2DRectScaler* pRS) override {
+	void D2DOnCreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory, const D2DRectScaler* pRS) override {
 		FLOAT fHeight = m_fHeight;
 		pRS->ScaleNoOffset(&fHeight);
 		pDWriteFactory->CreateTextFormat(
@@ -276,7 +344,7 @@ public:
 
 		m_pWTF->SetTextAlignment(m_ta);
 
-		__super::D2DOnCreateResources(pDWriteFactory, pRenderTarget, pRS);
+		__super::D2DOnCreateResources(pDWriteFactory, pRenderTarget, pIWICFactory, pRS);
 	}
 
 	void D2DDiscardResources() override {
@@ -349,7 +417,7 @@ protected:
 class D2DWorld
 {
 public:
-	virtual bool CreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, D2DRectScaler* pRS) {
+	virtual bool CreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory, D2DRectScaler* pRS) {
 		return true;
 	}
 
@@ -360,8 +428,8 @@ public:
 		return true;
 	}
 
-	void AddShape(Shape* p, IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, D2DRectScaler* pRS, bool active = true) {
-		p->D2DOnCreateResources(pDWriteFactory, pRenderTarget, pRS);
+	void AddShape(Shape* p, IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory, D2DRectScaler* pRS, bool active = true) {
+		p->D2DOnCreateResources(pDWriteFactory, pRenderTarget, pIWICFactory, pRS);
 		p->SetActive(active);
 		m_shapes.push_back(p);
 	}
@@ -376,9 +444,9 @@ public:
 		p->D2DDiscardResources();
 	}
 
-	void ProcessQueue(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, D2DRectScaler* pRS) {
+	void ProcessQueue(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory, D2DRectScaler* pRS) {
 		for (auto p : m_shapesQueue) {
-			p->D2DOnCreateResources(pDWriteFactory, pRenderTarget, pRS);
+			p->D2DOnCreateResources(pDWriteFactory, pRenderTarget, pIWICFactory, pRS);
 			m_shapes.push_back(p);
 		}
 		m_shapesQueue.clear();

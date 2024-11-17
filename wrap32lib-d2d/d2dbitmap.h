@@ -32,7 +32,7 @@ public:
 		return w32Size(0, 0);
 	}
 
-	void Render(ID2D1RenderTarget* pRenderTarget, const RectF& rectBounds) const {
+	void Render(ID2D1RenderTarget* pRenderTarget, const D2D1_RECT_F& rectBounds) const {
 		if (m_pBitmap) {
 			pRenderTarget->DrawBitmap(
 				m_pBitmap,

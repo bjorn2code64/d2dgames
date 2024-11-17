@@ -212,6 +212,10 @@
     <ClInclude Include="BreakoutWorld.h" />
     <ClInclude Include="InvaderWorld.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="invader1.png" />
+    <Image Include="invader2.png" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

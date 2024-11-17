@@ -38,8 +38,8 @@ protected:
 	const int m_barrierDividerX = 8;
 	const int m_barrierDividerY = 6;
 
-	const FLOAT m_invaderWidth = 40.0f;
-	const FLOAT m_invaderHeight = 30.0f;
+	const FLOAT m_invaderWidth = 60.0f;
+	const FLOAT m_invaderHeight = 40.0f;
 	const FLOAT m_invaderBorder = 10.0f;
 	const FLOAT m_invaderbulletSpeed = 15.0f;
 	const int m_invaderBulletChanceStart = 60;
@@ -74,6 +74,8 @@ public:
 
 		m_invaderBulletChance(m_invaderBulletChanceStart),
 		
+		m_frame(false),
+
 		// score
 		m_score(0),
 		m_livesRemaining(m_playerLives),
@@ -110,11 +112,16 @@ public:
 		}
 	}
 
-	bool CreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, D2DRectScaler* pRS) override {
+	bool CreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory, D2DRectScaler* pRS) override {
+		m_pBitmap1 = new d2dBitmap;
+		m_pBitmap1->LoadFromFile(pRenderTarget, pIWICFactory, L"invader1.png", (UINT)m_invaderWidth, (UINT)m_invaderHeight);
+		m_pBitmap2 = new d2dBitmap;
+		m_pBitmap2->LoadFromFile(pRenderTarget, pIWICFactory, L"invader2.png", (UINT)m_invaderWidth, (UINT)m_invaderHeight);
+
 		// Create the invaders
 		for (FLOAT x = 0; x < m_invaderCols; x++) {
 			for (int y = 0; y < m_invaderRows; y++) {
-				MovingRectangle* pInvader = new MovingRectangle(
+				MovingBitmap* pInvader = new MovingBitmap(m_pBitmap1,
 					Point2F(m_invaderBorder + x * (m_invaderWidth + m_invaderBorder),
 						m_invaderBorder + y * (m_invaderHeight + m_invaderBorder) + m_scoreY + m_shipY),
 					m_invaderWidth, m_invaderHeight,
@@ -122,7 +129,7 @@ public:
 					m_invaderColour
 				);
 				m_invaders.push_back(pInvader);
-				AddShape(pInvader, pDWriteFactory, pRenderTarget, pRS);
+				AddShape(pInvader, pDWriteFactory, pRenderTarget, pIWICFactory, pRS);
 			}
 		}
 
@@ -141,7 +148,7 @@ public:
 						divBarrierWidth + 1.0F, divBarrierHeight + 1.0F, 0.0F, 0, m_barrierColour);
 
 					m_barriers.push_back(barrier);
-					AddShape(barrier, pDWriteFactory, pRenderTarget, pRS);
+					AddShape(barrier, pDWriteFactory, pRenderTarget, pIWICFactory, pRS);
 				}
 			}
 		}
@@ -159,20 +166,20 @@ public:
 			bullet->SetPos(pos);
 
 			playerLifePt.x += piWidth + 10.0F;
-			AddShape(life, pDWriteFactory, pRenderTarget, pRS);
+			AddShape(life, pDWriteFactory, pRenderTarget, pIWICFactory, pRS);
 			m_playerLifeIndicators.push_back(life);
-			AddShape(bullet, pDWriteFactory, pRenderTarget, pRS);
+			AddShape(bullet, pDWriteFactory, pRenderTarget, pIWICFactory, pRS);
 			m_playerLifeIndicators.push_back(bullet);
 		}
 
-		AddShape(&m_player, pDWriteFactory, pRenderTarget, pRS);
-		AddShape(&m_playerBullet, pDWriteFactory, pRenderTarget, pRS);
-		AddShape(&m_mothership, pDWriteFactory, pRenderTarget, pRS, false);
-		AddShape(&m_textScore, pDWriteFactory, pRenderTarget, pRS);
-		AddShape(new MovingText(L"Score", Point2F(0.0f, m_textHeight * 0.5f), 200.0f, m_textHeight, 0.0f, 0, m_textColour, DWRITE_TEXT_ALIGNMENT_CENTER), pDWriteFactory, pRenderTarget, pRS);
-		AddShape(&m_textMothershipScore, pDWriteFactory, pRenderTarget, pRS);
+		AddShape(&m_player, pDWriteFactory, pRenderTarget, pIWICFactory, pRS);
+		AddShape(&m_playerBullet, pDWriteFactory, pRenderTarget, pIWICFactory, pRS);
+		AddShape(&m_mothership, pDWriteFactory, pRenderTarget, pIWICFactory, pRS, false);
+		AddShape(&m_textScore, pDWriteFactory, pRenderTarget, pIWICFactory, pRS);
+		AddShape(new MovingText(L"Score", Point2F(0.0f, m_textHeight * 0.5f), 200.0f, m_textHeight, 0.0f, 0, m_textColour, DWRITE_TEXT_ALIGNMENT_CENTER), pDWriteFactory, pRenderTarget, pIWICFactory, pRS);
+		AddShape(&m_textMothershipScore, pDWriteFactory, pRenderTarget, pIWICFactory, pRS);
 		m_textMothershipScore.SetActive(false);
-		AddShape(&m_textGameOver, pDWriteFactory, pRenderTarget, pRS);
+		AddShape(&m_textGameOver, pDWriteFactory, pRenderTarget, pIWICFactory, pRS);
 		m_textGameOver.SetActive(false);
 
 		UpdateIndicators();
@@ -218,6 +225,12 @@ public:
 		bool hitEnd = false;
 		if (m_tdInvaderMove.Elapsed(tick)) {
 			// Time for an invader move
+			// Replace the bitmap
+			for (auto* p : m_invaders) {
+				p->SetBitmap(m_frame ? m_pBitmap1 : m_pBitmap2);
+			}
+			m_frame = !m_frame;
+
 			// Check if they move, will any of them hit the end.
 			for (auto* p : m_invaders) {
 				if (p->IsActive()) {
@@ -424,7 +437,7 @@ protected:
 	MovingRectangle m_player;
 	MovingRectangle m_playerBullet;
 	std::vector<Shape*> m_playerLifeIndicators;
-	std::vector<Shape*> m_invaders;
+	std::vector<MovingBitmap*> m_invaders;
 	std::vector<Shape*> m_invaderBullets;
 	MovingRectangle m_mothership;
 	MovingText m_textScore;
@@ -437,7 +450,12 @@ protected:
 	MovingText m_textMothershipScore;
 	MovingText m_textGameOver;
 
+	d2dBitmap* m_pBitmap1;
+	d2dBitmap* m_pBitmap2;
+
 	int m_invaderBulletChance;
 	int m_score;
 	int m_livesRemaining;
+
+	bool m_frame;
 };

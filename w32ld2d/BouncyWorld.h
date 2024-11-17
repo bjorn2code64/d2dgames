@@ -18,9 +18,9 @@ public:
 			delete shape;
 	}
 
-	bool CreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, const D2DRectScaler* pRS) {
+	bool CreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory, const D2DRectScaler* pRS) {
 		for (auto& shape : m_shapes)
-			shape->D2DOnCreateResources(pDWriteFactory, pRenderTarget, pRS);
+			shape->D2DOnCreateResources(pDWriteFactory, pRenderTarget, pIWICFactory, pRS);
 
 		return true;
 	}

@@ -42,9 +42,9 @@ public:
 	}
 
 protected:
-	void D2DOnCreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget) override  {
+	void D2DOnCreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory) override  {
 		pRenderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White), &m_pBrush);
-		m_world.CreateResources(pDWriteFactory, pRenderTarget, &m_rsFAR);
+		m_world.CreateResources(pDWriteFactory, pRenderTarget, pIWICFactory, &m_rsFAR);
 	}
 
 	bool D2DUpdate() {
@@ -52,8 +52,8 @@ protected:
 		return m_world.Update(tick, m_ptMouse);
 	}
 
-	void D2DPreRender(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget) override {
-		m_world.ProcessQueue(pDWriteFactory, pRenderTarget, &m_rsFAR);
+	void D2DPreRender(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory) override {
+		m_world.ProcessQueue(pDWriteFactory, pRenderTarget, pIWICFactory, &m_rsFAR);
 	}
 
 	void D2DRender(ID2D1HwndRenderTarget* pRenderTarget) override {

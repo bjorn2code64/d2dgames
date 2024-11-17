@@ -93,7 +93,7 @@ protected:
 			// Set rsFAR up first as it may be used in Creation of resources
 			m_rsFAR.SetBounds(m_pRenderTarget->GetSize());
 
-			D2DOnCreateResources(m_pDWriteFactory, m_pRenderTarget);
+			D2DOnCreateResources(m_pDWriteFactory, m_pRenderTarget, m_pIWICFactory);
 		}
 
 		return hr;
@@ -138,7 +138,7 @@ protected:
 
 	virtual bool D2DUpdate() { return false;  }	// manipulate your data here - return true to quit
 
-	virtual void D2DPreRender(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget) {}	// draw the data here
+	virtual void D2DPreRender(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory) {}	// draw the data here
 	virtual void D2DRender(ID2D1HwndRenderTarget* pRenderTarget) {}	// draw the data here
 
 	void ThreadStartup() override {
@@ -157,7 +157,7 @@ protected:
 
 				if (EnsureDeviceResourcesCreated() != S_OK)	return true;
 
-				D2DPreRender(m_pDWriteFactory, m_pRenderTarget);
+				D2DPreRender(m_pDWriteFactory, m_pRenderTarget, m_pIWICFactory);
 
 				m_pRenderTarget->BeginDraw();
 				D2DRender(m_pRenderTarget);
@@ -202,7 +202,8 @@ protected:
 	void D2DClearScreen(D2D1::ColorF c)	{	m_pRenderTarget->Clear(c);	}
 	void D2DGetFARRect(RectF* p)		{	m_rsFAR.GetUserRect(p);		}
 
-	virtual void D2DOnCreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget) {}
+	virtual void D2DOnCreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget,
+		IWICImagingFactory* pIWICFactory) {}
 	virtual void D2DOnDiscardResources() {}
 
 protected:
