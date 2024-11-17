@@ -35,7 +35,7 @@ public:
 		RETURN_IF_ERROR(CreateOverlapped(APPNAME));
 
 		m_world.Init();	// Intialise the world
-		D2DWindow::Init(m_world.GetScreenSize());	// Intialise our d2d engine
+		D2DWindow::Init(m_world.D2DGetScreenSize());	// Intialise our d2d engine
 
 		Show(nCmdShow);
 		return ERROR_SUCCESS;
@@ -45,15 +45,15 @@ protected:
 	// Direct2D callbacks from the engine. Pass them to our world.
 	void D2DOnCreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory) override  {
 		pRenderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White), &m_pBrush);
-		m_world.CreateResources(pDWriteFactory, pRenderTarget, pIWICFactory, &m_rsFAR);
+		m_world.D2DCreateResources(pDWriteFactory, pRenderTarget, pIWICFactory, &m_rsFAR);
 	}
 
 	bool D2DUpdate() {
-		return m_world.Update(GetTickCount64(), m_ptMouse);
+		return m_world.D2DUpdate(GetTickCount64(), m_ptMouse);
 	}
 
 	void D2DPreRender(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory) override {
-		m_world.ProcessQueue(pDWriteFactory, pRenderTarget, pIWICFactory, &m_rsFAR);
+		m_world.D2DPreRender(pDWriteFactory, pRenderTarget, pIWICFactory, &m_rsFAR);
 	}
 
 	void D2DRender(ID2D1HwndRenderTarget* pRenderTarget) override {
@@ -64,11 +64,11 @@ protected:
 		D2DGetFARRect(&rectBounds);
 		pRenderTarget->DrawRectangle(rectBounds, m_pBrush);
 
-		m_world.Render(pRenderTarget, &m_rsFAR);
+		m_world.D2DRender(pRenderTarget, &m_rsFAR);
 	}
 
 	void D2DOnDiscardResources() override {
-		m_world.DiscardResources();
+		m_world.D2DDiscardResources();
 
 		SafeRelease(&m_pBrush);
 	}
@@ -87,8 +87,8 @@ protected:
 // Instance just one of the following worlds
 
 //	BouncyWorld m_world;
-//	BreakoutWorld m_world;
-	InvaderWorld m_world;
+	BreakoutWorld m_world;
+//	InvaderWorld m_world;
 
 	ID2D1SolidColorBrush* m_pBrush;	// Fixed aspect outline brush - white
 	Point2F m_ptMouse;				// Track the mouse position

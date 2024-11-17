@@ -18,14 +18,14 @@ public:
 			delete shape;
 	}
 
-	bool CreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory, const D2DRectScaler* pRS) {
+	bool D2DCreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory, D2DRectScaler* pRS) override {
 		for (auto& shape : m_shapes)
 			shape->D2DOnCreateResources(pDWriteFactory, pRenderTarget, pIWICFactory, pRS);
 
 		return true;
 	}
 
-	bool DiscardResources() {
+	bool D2DDiscardResources() override {
 		for (auto shape : m_shapes)
 			shape->D2DDiscardResources();
 		return true;
@@ -64,7 +64,7 @@ public:
 		return true;
 	}
 
-	bool Update(ULONGLONG tick, const Point2F& mouse) {
+	bool D2DUpdate(ULONGLONG tick, const Point2F& mouse) override {
 		D2D1_RECT_U rectBounds;
 		rectBounds.left = rectBounds.top = 0;
 		rectBounds.right = m_screenWidth;
@@ -72,7 +72,7 @@ public:
 		auto it = m_shapes.begin();
 		while (it != m_shapes.end()) {
 			// Move the shape
-			switch ((*it)->WillHit(&rectBounds)) {
+			switch ((*it)->WillHit(rectBounds)) {
 			case Position::moveResult::hitboundsleft:
 				(*it)->BounceX();
 				break;
@@ -102,7 +102,7 @@ public:
 		return true;
 	}
 
-	bool Render(ID2D1HwndRenderTarget* pRenderTarget, const D2DRectScaler* pRsFAR) {
+	bool D2DRender(ID2D1HwndRenderTarget* pRenderTarget, D2DRectScaler* pRsFAR) override {
 		for (auto& shape : m_shapes) {
 			shape->Draw(pRenderTarget, pRsFAR);
 		}

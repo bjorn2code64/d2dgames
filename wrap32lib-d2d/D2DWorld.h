@@ -33,7 +33,7 @@ public:
 		UpdateCache();
 	}
 
-	virtual moveResult WillHit(D2D1_RECT_U* pBounds = NULL) { return moveResult::ok; }
+	virtual moveResult WillHit(const D2D1_RECT_U& bounds) { return moveResult::ok; }
 	virtual void MovePos(Point2F& pos) { pos += m_cacheStep; }
 	void Move() { m_pos += m_cacheStep; }
 
@@ -100,7 +100,7 @@ public:
 	void SetActive(bool b) { m_active = b;  }
 	bool IsActive() { return m_active;  }
 
-	virtual moveResult WillHit(D2D1_RECT_U* pBounds = NULL) { return __super::WillHit(pBounds); }
+	virtual moveResult WillHit(const D2D1_RECT_U& bounds) { return __super::WillHit(bounds); }
 //	virtual void MovePos(Point2F& pos) { return __super::MovePos(pos); }
 
 	ID2D1SolidColorBrush* GetBrush() { return m_pBrush; }
@@ -141,24 +141,22 @@ public:
 		return distSq <= m_fRadius * m_fRadius;
 	}
 
-	virtual moveResult WillHit(D2D1_RECT_U* pBounds) override {
+	virtual moveResult WillHit(const D2D1_RECT_U& bounds) override {
 		auto currPos = GetPos();
 		__super::MovePos(currPos);
 
-		if (pBounds) {
-			// Check if it hit an edge
-			if (currPos.x < pBounds->left + m_fRadius) {
-				return moveResult::hitboundsleft;
-			}
-			if (currPos.x > pBounds->right - m_fRadius) {
-				return moveResult::hitboundsright;
-			}
-			if (currPos.y < pBounds->top + m_fRadius) {
-				return moveResult::hitboundstop;
-			}
-			if (currPos.y > pBounds->bottom - m_fRadius) {
-				return moveResult::hitboundsbottom;
-			}
+		// Check if it hit an edge
+		if (currPos.x < bounds.left + m_fRadius) {
+			return moveResult::hitboundsleft;
+		}
+		if (currPos.x > bounds.right - m_fRadius) {
+			return moveResult::hitboundsright;
+		}
+		if (currPos.y < bounds.top + m_fRadius) {
+			return moveResult::hitboundstop;
+		}
+		if (currPos.y > bounds.bottom - m_fRadius) {
+			return moveResult::hitboundsbottom;
 		}
 
 		return moveResult::ok;
@@ -196,24 +194,22 @@ public:
 		return false;
 	}
 
-	moveResult WillHit(D2D1_RECT_U* pBounds = NULL) {
+	moveResult WillHit(const D2D1_RECT_U& bounds) {
 		Point2F currPos = GetPos();
 		__super::MovePos(currPos);
 
-		if (pBounds) {
-			// Check if it hit an edge
-			if (currPos.x < pBounds->left) {
-				return moveResult::hitboundsleft;
-			}
-			if (currPos.x > pBounds->right - m_fWidth) {
-				return moveResult::hitboundsright;
-			}
-			if (currPos.y < pBounds->top) {
-				return moveResult::hitboundstop;
-			}
-			if (currPos.y > pBounds->bottom - m_fHeight) {
-				return moveResult::hitboundsbottom;
-			}
+		// Check if it hit an edge
+		if (currPos.x < bounds.left) {
+			return moveResult::hitboundsleft;
+		}
+		if (currPos.x > bounds.right - m_fWidth) {
+			return moveResult::hitboundsright;
+		}
+		if (currPos.y < bounds.top) {
+			return moveResult::hitboundstop;
+		}
+		if (currPos.y > bounds.bottom - m_fHeight) {
+			return moveResult::hitboundsbottom;
 		}
 
 		return moveResult::ok;
@@ -263,24 +259,22 @@ public:
 		return false;
 	}
 
-	moveResult WillHit(D2D1_RECT_U* pBounds = NULL) {
+	moveResult WillHit(const D2D1_RECT_U& bounds) {
 		Point2F currPos = GetPos();
 		__super::MovePos(currPos);
 
-		if (pBounds) {
-			// Check if it hit an edge
-			if (currPos.x < pBounds->left) {
-				return moveResult::hitboundsleft;
-			}
-			if (currPos.x > pBounds->right - m_fWidth) {
-				return moveResult::hitboundsright;
-			}
-			if (currPos.y < pBounds->top) {
-				return moveResult::hitboundstop;
-			}
-			if (currPos.y > pBounds->bottom - m_fHeight) {
-				return moveResult::hitboundsbottom;
-			}
+		// Check if it hit an edge
+		if (currPos.x < bounds.left) {
+			return moveResult::hitboundsleft;
+		}
+		if (currPos.x > bounds.right - m_fWidth) {
+			return moveResult::hitboundsright;
+		}
+		if (currPos.y < bounds.top) {
+			return moveResult::hitboundstop;
+		}
+		if (currPos.y > bounds.bottom - m_fHeight) {
+			return moveResult::hitboundsbottom;
 		}
 
 		return moveResult::ok;
@@ -417,11 +411,11 @@ protected:
 class D2DWorld
 {
 public:
-	virtual bool CreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory, D2DRectScaler* pRS) {
+	virtual bool D2DCreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory, D2DRectScaler* pRS) {
 		return true;
 	}
 
-	bool DiscardResources() {
+	virtual bool D2DDiscardResources() {
 		for (auto p : m_shapes) {
 			p->D2DDiscardResources();
 		}
@@ -444,10 +438,10 @@ public:
 		p->D2DDiscardResources();
 	}
 
-	void ProcessQueue(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory, D2DRectScaler* pRS) {
+	void D2DPreRender(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory, D2DRectScaler* pRS) {
+		// Now is the time to add queued shapes to the engine.
 		for (auto p : m_shapesQueue) {
-			p->D2DOnCreateResources(pDWriteFactory, pRenderTarget, pIWICFactory, pRS);
-			m_shapes.push_back(p);
+			AddShape(p, pDWriteFactory, pRenderTarget, pIWICFactory, pRS);
 		}
 		m_shapesQueue.clear();
 	}
@@ -460,11 +454,11 @@ public:
 		return true;
 	}
 
-	virtual bool Update(ULONGLONG tick, const Point2F& mouse) {
+	virtual bool D2DUpdate(ULONGLONG tick, const Point2F& mouse) {
 		return true;
 	}
 
-	bool Render(ID2D1HwndRenderTarget* pRenderTarget, D2DRectScaler* pRsFAR) {
+	virtual bool D2DRender(ID2D1HwndRenderTarget* pRenderTarget, D2DRectScaler* pRsFAR) {
 		for (auto p : m_shapes)
 			if (p->IsActive())
 				p->Draw(pRenderTarget, pRsFAR);
@@ -472,7 +466,7 @@ public:
 		return true;
 	}
 
-	virtual w32Size GetScreenSize() {
+	virtual w32Size D2DGetScreenSize() {
 		return w32Size(1920, 1080);
 	}
 

@@ -24,7 +24,7 @@ public:
 	{}
 	~BreakoutWorld() {}
 
-	bool CreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory, const D2DRectScaler* pRS) {
+	bool D2DCreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory, D2DRectScaler* pRS) override {
 		for (FLOAT x = 0; x < m_screenWidth; x += m_brickWidth) {
 			for (int y = 0; y < 5; y++) {
 				MovingRectangle* pBrick = new MovingRectangle(Point2F(x, y * m_brickHeight),
@@ -41,7 +41,7 @@ public:
 		return true;
 	}
 
-	bool DiscardResources() {
+	bool D2DDiscardResources() override {
 		for (auto p : m_bricks) {
 			p->D2DDiscardResources();
 		}
@@ -54,13 +54,13 @@ public:
 		return true;
 	}
 
-	bool Update(ULONGLONG tick, const Point2F& mouse) {
+	bool D2DUpdate(ULONGLONG tick, const Point2F& mouse) override {
 		m_player.SetPos(Point2F(LimitF(mouse.x, 0.0f, m_screenWidth - m_playerWidth), 1000.0f));
 		D2D1_RECT_U rectBounds;
 		rectBounds.left = rectBounds.top = 0;
 		rectBounds.right = m_screenWidth;
 		rectBounds.bottom = m_screenHeight;
-		switch (m_ball.WillHit(&rectBounds)) {
+		switch (m_ball.WillHit(rectBounds)) {
 		case Position::moveResult::hitboundsright:
 		case Position::moveResult::hitboundsleft:
 			m_ball.BounceX();
@@ -96,7 +96,7 @@ public:
 		return true;
 	}
 
-	bool Render(ID2D1HwndRenderTarget* pRenderTarget, const D2DRectScaler* pRsFAR) {
+	bool D2DRender(ID2D1HwndRenderTarget* pRenderTarget, D2DRectScaler* pRsFAR) override {
 		m_player.Draw(pRenderTarget, pRsFAR);
 		m_ball.Draw(pRenderTarget, pRsFAR);
 		for (auto p : m_bricks) {
