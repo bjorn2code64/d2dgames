@@ -1,5 +1,7 @@
 #pragma once
 
+#include <corecrt_math_defines.h>
+
 #include <d2d1.h>
 
 #include <Window.h>
@@ -32,6 +34,15 @@ public:
 		y = (FLOAT)pt.y;
 		return *this;
 	}
+	double DistanceToSq(const Point2F& rhs) {
+		return (rhs.x - x) * (rhs.x - x) + (rhs.y - y) * (rhs.y - y);
+	}
+	double DistanceTo(const Point2F& rhs) {
+		return sqrt((rhs.x - x) * (rhs.x - x) + (rhs.y - y) * (rhs.y - y));
+	}
+	double angleradTo(const Point2F& rhs) const {
+		return M_PI_2 + atan2(y - rhs.y, x - rhs.x);
+	}
 };
 
 class RectF : public D2D1_RECT_F
@@ -59,6 +70,13 @@ public:
 
 	FLOAT Width() { return right - left; }
 	FLOAT Height() { return bottom - top; }
+
+	void GetCorners(std::vector<Point2F>& corners) {
+		corners.push_back(TopLeft());
+		corners.push_back(TopRight());
+		corners.push_back(BottomLeft());
+		corners.push_back(BottomRight());
+	}
 };
 
 class w32ColorF : public D2D1::ColorF {

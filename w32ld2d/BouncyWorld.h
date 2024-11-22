@@ -53,7 +53,7 @@ public:
 				float radius = w32randf(m_minRadius, m_maxRadius);
 				Point2F pos(w32randf(radius, m_screenWidth - radius), w32randf(radius, m_screenHeight - radius));
 
-				m_shapes.push_back(new MovingEllipse(
+				m_shapes.push_back(new MovingCircle(
 					pos,
 					radius,
 					speed,
@@ -65,14 +65,14 @@ public:
 	}
 
 	bool D2DUpdate(ULONGLONG tick, const Point2F& mouse) override {
-		D2D1_RECT_U rectBounds;
+		D2D1_RECT_F rectBounds;
 		rectBounds.left = rectBounds.top = 0;
 		rectBounds.right = m_screenWidth;
 		rectBounds.bottom = m_screenHeight;
 		auto it = m_shapes.begin();
 		while (it != m_shapes.end()) {
 			// Move the shape
-			switch ((*it)->WillHit(rectBounds)) {
+			switch ((*it)->WillHitBounds(rectBounds)) {
 			case Position::moveResult::hitboundsleft:
 				(*it)->BounceX();
 				break;

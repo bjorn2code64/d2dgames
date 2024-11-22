@@ -5,8 +5,8 @@
 
 #include <WindowSaverExt.h>
 
-#include "BouncyWorld.h"
-#include "InvaderWorld.h"
+//#include "BouncyWorld.h"
+//#include "InvaderWorld.h"
 #include "BreakoutWorld.h"
 
 #define APPNAME L"w32ld2d"
@@ -57,7 +57,7 @@ protected:
 	}
 
 	void D2DRender(ID2D1HwndRenderTarget* pRenderTarget) override {
-		D2DClearScreen(D2D1::ColorF::Black);
+		D2DClearScreen(m_world.m_colorBackground);
 
 		// Draw the fixed aspect rectangle
 		RectF rectBounds;

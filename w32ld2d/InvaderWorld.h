@@ -266,7 +266,7 @@ protected:
 			// Check if they move, will any of them hit the end.
 			for (auto* p : m_invaders) {
 				if (p->IsActive()) {
-					if (p->WillHit(rectBounds) != Position::moveResult::ok) {
+					if (p->WillHitBounds(rectBounds) != Position::moveResult::ok) {
 						hitEnd = true;
 					}
 				}
@@ -291,7 +291,7 @@ protected:
 
 	void UpdateMovePlayer(const D2D1_RECT_U& rectBounds) {
 		// Move the player
-		if (m_player.WillHit(rectBounds) == Position::moveResult::ok) {
+		if (m_player.WillHitBounds(rectBounds) == Position::moveResult::ok) {
 			m_player.Move();
 		}
 		else {
@@ -302,7 +302,7 @@ protected:
 	void UpdateMovePlayerBullet(const D2D1_RECT_U& rectBounds) {
 		// Move the player bullet
 		if (m_playerBullet.IsActive()) {
-			if (m_playerBullet.WillHit(rectBounds) != Position::moveResult::ok) {
+			if (m_playerBullet.WillHitBounds(rectBounds) != Position::moveResult::ok) {
 				m_playerBullet.SetUserData(0);
 			}
 			else {
@@ -357,7 +357,7 @@ protected:
 		// Move (and destroy) invader bullets
 		for (auto it = m_invaderBullets.begin(); it != m_invaderBullets.end();) {
 			if ((*it)->IsActive()) {
-				if ((*it)->WillHit(rectBounds) != Position::moveResult::ok) {
+				if ((*it)->WillHitBounds(rectBounds) != Position::moveResult::ok) {
 					// we're out of bounds
 					RemoveShape(*it);
 					it = m_invaderBullets.erase(it);	// remove the bullet

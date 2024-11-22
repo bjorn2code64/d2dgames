@@ -4,9 +4,61 @@
 #define _USE_MATH_DEFINES	// for M_PI
 #include <math.h>
 
+class Vector2F {
+public:
+	FLOAT x, y;
+
+	Vector2F() : x(0.0F), y(0.0F) {}
+	Vector2F(FLOAT x, FLOAT y) : x(x), y(y) {}
+
+	Vector2F operator-(const Vector2F& other) const {
+		return { x - other.x, y - other.y };
+	}
+
+	Vector2F operator+(const Vector2F& other) const {
+		return { x + other.x, y + other.y };
+	}
+
+	Vector2F operator*(float scalar) const {
+		return { x * scalar, y * scalar };
+	}
+
+	float dot(const Vector2F& other) const {
+		return x * other.x + y * other.y;
+	}
+
+	Vector2F normalize() const {
+		float length = std::sqrt(x * x + y * y);
+		return { x / length, y / length };
+	}
+
+	float lengthsq() const {
+		return (x * x) + (y * y);
+	}
+
+	double anglerad() const {
+		if (y == 0) {
+			return (x > 0) ? M_PI / 2 : 3 * M_PI / 2;
+		}
+		return M_PI / 2 + atan2(y, x);
+	}
+};
+
+Vector2F reflect(const Vector2F& direction, const Vector2F& normal) {
+	return direction - normal * (2 * direction.dot(normal));
+}
+
 class Position
 {
 public:
+	static double RadToDeg(double rad) {
+		return rad / M_PI * 180;
+	}
+
+	static double DegToRad(double deg) {
+		return deg / 180 * M_PI;
+	}
+
 	enum class moveResult {
 		ok,
 		hitboundsright,
@@ -15,16 +67,22 @@ public:
 		hitboundsbottom
 	};
 
-	Position(const Point2F& pos, float speed, int direction) : m_pos(pos), m_fSpeed(speed) {
-		SetDirection(direction);
+	Position(const Point2F& pos, float speed, int direction) : m_pos(pos), m_fSpeed(speed)
+	{
+		SetDirectionInDeg(direction);
 	}
 
 	const Point2F& GetPos() const { return m_pos; }
 	void SetPos(const Point2F& pos) { m_pos = pos; }
 	void OffsetPos(const Point2F& pos) { m_pos += pos;  }
 
-	void SetDirection(int directionInDeg) {
+	void SetDirectionInDeg(int directionInDeg) {
 		m_direction = ((double)directionInDeg * M_PI) / 180.0;
+		UpdateCache();
+	}
+
+	void SetDirection(double direction) {
+		m_direction = direction;
 		UpdateCache();
 	}
 
@@ -33,27 +91,44 @@ public:
 		UpdateCache();
 	}
 
-	virtual moveResult WillHit(const D2D1_RECT_U& bounds) { return moveResult::ok; }
-	virtual void MovePos(Point2F& pos) { pos += m_cacheStep; }
-	void Move() { m_pos += m_cacheStep; }
-
-	void BounceX() {
-		if ((m_direction >= M_PI / 2.0) && (m_direction < 3.0 * M_PI / 2.0)) {
-			m_direction = M_PI / 2.0 + (3.0 * M_PI / 2.0) - m_direction;
+	virtual moveResult WillHitBounds(const D2D1_RECT_U& bounds) { return moveResult::ok; }
+	virtual void MovePos(Point2F& pos, float len = 0.0)
+	{
+		if (len > 0.0) {
+			float movelen = sqrt(m_cacheStep.lengthsq());
+			float fraction = len / movelen;
+			pos.x += m_cacheStep.x * fraction;
+			pos.y += m_cacheStep.y * fraction;
 		}
 		else {
-			m_direction = 2.0 * M_PI - m_direction;
+			pos.x += m_cacheStep.x;
+			pos.y += m_cacheStep.y;
 		}
+	}
+
+	void Move() { m_pos.x += m_cacheStep.x; m_pos.y += m_cacheStep.y;  }
+
+	static double GetBounceX(double dir) {
+		if ((dir >= M_PI / 2.0) && (dir < 3.0 * M_PI / 2.0)) {
+			return M_PI / 2.0 + (3.0 * M_PI / 2.0) - dir;
+		}
+		return 2.0 * M_PI - dir;
+	}
+
+	static double GetBounceY(double dir) {
+		if (dir <= M_PI) {
+			return M_PI - dir;
+		}
+		return M_PI + (2.0 * M_PI) - dir;
+	}
+
+	void BounceX() {
+		m_direction = GetBounceX(m_direction);
 		UpdateCache();
 	}
 
 	void BounceY() {
-		if (m_direction <= M_PI) {
-			m_direction = M_PI - m_direction;
-		}
-		else {
-			m_direction = M_PI + (2.0 * M_PI) - m_direction;
-		}
+		m_direction = GetBounceY(m_direction);
 		UpdateCache();
 	}
 
@@ -61,16 +136,28 @@ public:
 		m_pos += pos;
 	}
 
+	double GetDirection() {
+		return m_direction;
+	}
+
+	void AddDirection(double f) {
+		m_direction += f;
+		UpdateCache();
+	}
+
 protected:
 	void UpdateCache() {
-		m_cacheStep = Point2F((FLOAT)sin(m_direction), (FLOAT)-cos(m_direction)) * m_fSpeed;
+//		char buff[256];
+//		snprintf(buff, 256, "deg %f rad %f\n", RadToDeg(m_direction), m_direction);
+//		OutputDebugStringA(buff);
+		m_cacheStep = Vector2F((FLOAT)sin(m_direction), (FLOAT)-cos(m_direction)) * m_fSpeed;
 	}
 
 protected:
 	Point2F m_pos;			// Current position
 	double m_direction;		// Held in radians
 	FLOAT m_fSpeed;			// Movement speed
-	Point2F m_cacheStep;	// Cache the move vector so we're not doing constant Trig
+	Vector2F m_cacheStep;	// Cache the move vector so we're not doing constant Trig
 };
 
 class Shape : public Position
@@ -100,8 +187,7 @@ public:
 	void SetActive(bool b) { m_active = b;  }
 	bool IsActive() { return m_active;  }
 
-	virtual moveResult WillHit(const D2D1_RECT_U& bounds) { return __super::WillHit(bounds); }
-//	virtual void MovePos(Point2F& pos) { return __super::MovePos(pos); }
+	virtual moveResult WillHitBounds(const D2D1_RECT_U& bounds) { return __super::WillHitBounds(bounds); }
 
 	ID2D1SolidColorBrush* GetBrush() { return m_pBrush; }
 
@@ -130,10 +216,10 @@ protected:
 	bool m_active;
 };
 
-class MovingEllipse : public Shape
+class MovingCircle : public Shape
 {
 public:
-	MovingEllipse(const Point2F& pos, float radius, float speed, int dir, UINT32 rgb, LPARAM userdata = 0) : Shape(pos, speed, dir, rgb, userdata), m_fRadius(radius) {}
+	MovingCircle(const Point2F& pos, float radius, float speed, int dir, UINT32 rgb, LPARAM userdata = 0) : Shape(pos, speed, dir, rgb, userdata), m_fRadius(radius) {}
 
 	bool HitTest(Point2F pos) override {
 		float distSq = (pos.x - m_pos.x) * (pos.x - m_pos.x) +
@@ -141,7 +227,7 @@ public:
 		return distSq <= m_fRadius * m_fRadius;
 	}
 
-	virtual moveResult WillHit(const D2D1_RECT_U& bounds) override {
+	virtual moveResult WillHitBounds(const D2D1_RECT_U& bounds) override {
 		auto currPos = GetPos();
 		__super::MovePos(currPos);
 
@@ -181,6 +267,115 @@ public:
 		p->bottom = GetPos().y + m_fRadius;
 	}
 
+	bool BounceOffRectSides(const Shape& shape) {
+		RectF r;
+		shape.GetBoundingBox(&r);
+
+		Point2F pos = GetPos();	// where we are
+		MovePos(pos);	// where we will be
+
+		// Check we're anywhere near it first
+		if ((pos.x + m_fRadius < r.left) || (pos.x - m_fRadius > r.right) ||
+			(pos.y + m_fRadius < r.top) || (pos.y - m_fRadius > r.bottom)) {
+			return false;
+		}
+
+		float endlen = sqrt(m_cacheStep.lengthsq());
+		float len = 0.0;
+		while (len < endlen) {	// Check in radius/2 steps
+			len += 1.0;
+
+			pos = GetPos();		// where we are
+			MovePos(pos, len);	// where we will be
+
+			// Check left and right bounce zone
+			if (WillHitRectX(r, pos)) {
+				SetPos(pos);
+				BounceX();
+				return true;
+			}
+
+			// Check top and bottom bounce zone
+			if (WillHitRectY(r, pos)) {
+				SetPos(pos);
+				BounceY();
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	bool BounceOffRectCorners(const Shape& shape) {
+		RectF r;
+		shape.GetBoundingBox(&r);
+
+		Point2F pos = GetPos();	// where we are
+		MovePos(pos);	// where we will be
+
+		// Check we're anywhere near it first
+		if ((pos.x + m_fRadius < r.left) || (pos.x - m_fRadius > r.right) ||
+			(pos.y + m_fRadius < r.top) || (pos.y - m_fRadius > r.bottom)) {
+			return false;
+		}
+
+		double radsq = m_fRadius * m_fRadius;
+		std::vector<Point2F> corners;
+		r.GetCorners(corners);
+
+		float endlensq = m_cacheStep.lengthsq();
+		float lensq = 0.0;
+		while (lensq < endlensq) {	// Check in radius/2 steps
+			lensq += 1.0;
+			MovePos(pos, lensq);	// where we will be
+
+			// Check all 4 corners
+			for (auto& corner : corners) {
+				if (pos.DistanceToSq(corner) < radsq - 0.1F) {
+					SetPos(pos);
+					BounceOffPoint(corner);
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+protected:
+	void BounceOffPoint(const Point2F& pt) {
+		// Gradient between pt and direction
+		double direction = m_cacheStep.anglerad();
+		double touch = pt.angleradTo(m_pos);
+		double deflection = M_PI - (direction - touch) * 2;
+		m_direction += deflection;
+		UpdateCache();
+	}
+
+	bool WillHitRectX(const RectF& r, const Point2F& pos) {
+		if ((pos.y >= r.top) && (pos.y <= r.bottom)) {
+			if ((pos.x >= r.right) && (pos.x - m_fRadius <= r.right)) {
+				return true;
+			}
+			if ((pos.x <= r.left) && (pos.x + m_fRadius >= r.left)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool WillHitRectY(const RectF& r, const Point2F& pos) {
+		if ((pos.x >= r.left) && (pos.x <= r.right)) {
+			if ((pos.y >= r.bottom) && (pos.y - m_fRadius <= r.bottom)) {
+				return true;
+			}
+			if ((pos.y <= r.top) && (pos.y + m_fRadius >= r.top)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 protected:
 	FLOAT m_fRadius;
 };
@@ -188,13 +383,20 @@ protected:
 class MovingRectangle : public Shape
 {
 public:
-	MovingRectangle(const Point2F& pos, float width, float height, float speed, int dir, UINT32 rgb, LPARAM userdata = 0) : Shape(pos, speed, dir, rgb, userdata), m_fWidth(width), m_fHeight(height) {}
+	MovingRectangle(const Point2F& pos, float width, float height, float speed, int dir, UINT32 rgb, LPARAM userdata = 0) :
+		Shape(pos, speed, dir, rgb, userdata), m_fWidth(width), m_fHeight(height)
+	{}
 
 	bool HitTest(Point2F pos) override {
 		return false;
 	}
 
-	moveResult WillHit(const D2D1_RECT_U& bounds) {
+	void SetSize(FLOAT width, FLOAT height) {
+		m_fWidth = width;
+		m_fHeight = height;
+	}
+
+	moveResult WillHitBounds(const D2D1_RECT_U& bounds) {
 		Point2F currPos = GetPos();
 		__super::MovePos(currPos);
 
@@ -259,7 +461,7 @@ public:
 		return false;
 	}
 
-	moveResult WillHit(const D2D1_RECT_U& bounds) {
+	moveResult WillHitBounds(const D2D1_RECT_U& bounds) {
 		Point2F currPos = GetPos();
 		__super::MovePos(currPos);
 
@@ -411,7 +613,12 @@ protected:
 class D2DWorld
 {
 public:
-	virtual bool D2DCreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory, D2DRectScaler* pRS) {
+	D2DWorld() : m_colorBackground(D2D1::ColorF::Black) {
+
+	}
+
+	virtual bool D2DCreateResources(IDWriteFactory* pDWriteFactory, ID2D1HwndRenderTarget* pRenderTarget, IWICImagingFactory* pIWICFactory, D2DRectScaler* pRS)
+	{
 		return true;
 	}
 
@@ -482,4 +689,6 @@ protected:
 protected:
 	std::vector<Shape*> m_shapes;
 	std::vector<Shape*> m_shapesQueue;
+public:
+	D2D1::ColorF m_colorBackground;
 };
