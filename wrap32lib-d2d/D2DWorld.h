@@ -86,6 +86,8 @@ public:
 		UpdateCache();
 	}
 
+	FLOAT GetSpeed() { return m_fSpeed;  }
+
 	void SetSpeed(float speed) {
 		m_fSpeed = speed;
 		UpdateCache();
