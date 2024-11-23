@@ -398,6 +398,12 @@ public:
 		m_fHeight = height;
 	}
 
+	FLOAT GetWidth() { return m_fWidth;  }
+	FLOAT GetHeight() { return m_fHeight; }
+
+	void SetWidth(FLOAT f) { m_fWidth = f; }
+	void SetHeight(FLOAT f) { m_fHeight = f; }
+
 	moveResult WillHitBounds(const D2D1_RECT_U& bounds) {
 		Point2F currPos = GetPos();
 		__super::MovePos(currPos);
